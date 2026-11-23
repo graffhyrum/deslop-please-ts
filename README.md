@@ -53,12 +53,12 @@ No Git hook is installed. Run `bun run vet` before committing; CI runs the same 
 
 ## Sample
 
-`src/` is a small multi-tenant web todo app (Bun + vanilla TS). `src/index.ts` serves it. `config.ts` reads `NODE_ENV` and `PORT` with arkenv. Replace with your code and keep `bun run vet` green.
+`src/` is a small multi-tenant web todo app (Bun + vanilla TS). `src/index.ts` serves it. `config.ts` reads `NODE_ENV` and `PORT` with @arkenv/core. Replace with your code and keep `bun run vet` green.
 
 ## Code style
 
 - Use ArkType for runtime values. Do not use `any`.
-- Use arkenv in `config.ts` for environment variables.
+- Use @arkenv/core in `config.ts` for environment variables.
 - Use factory functions. Do not use classes for services.
 - Use template literals. Do not build strings with `+`.
 - Import from the source file. Do not add barrel `index.ts` re-exports.
@@ -72,7 +72,7 @@ No Git hook is installed. Run `bun run vet` before committing; CI runs the same 
 .
 ├── src/                 # Sample source and tests
 ├── scripts/             # vet, crap4ts, and coverage threshold
-├── config.ts            # arkenv environment config
+├── config.ts            # @arkenv/core environment config
 ├── tsconfig.json
 ├── .github/workflows/   # CI runs bun run vet
 └── package.json
@@ -96,5 +96,5 @@ bun run release
 - `stepdown-rule` `v0.4.5`
 - `crap4ts` `v2.1.3`
 - `mutate4ts` `v1.0.0`
-- ArkType and arkenv
+- ArkType and @arkenv/core
 - Changesets

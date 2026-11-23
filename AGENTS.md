@@ -16,7 +16,7 @@
 ### Types & Validation
 
 - Use `ArkType` for runtime validation - NO `any` types
-- Use `arkenv` for environment variables
+- Use `@arkenv/core` for environment variables
 - Strict TypeScript enabled: noUncheckedIndexedAccess, noImplicitOverride
 
 ### Functions & Modules
@@ -45,10 +45,10 @@
 
 ### Configuration
 
-- Use `arkenv` from [`config.ts`](./config.ts) for environment variables - NEVER remove arkenv
+- Use `@arkenv/core` from [`config.ts`](./config.ts) for environment variables - NEVER remove it
 - Import: `import { CONFIG, type Config } from './config'`
 - Access env: `CONFIG.isDevelopment`, `CONFIG.isProduction`, `CONFIG.nodeEnv`
-- All env vars must be validated through arkenv
+- All env vars must be validated through @arkenv/core
 
 ## Bun APIs
 
