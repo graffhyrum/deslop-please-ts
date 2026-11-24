@@ -1,6 +1,5 @@
 import indexHtml from "./index.html";
 import { createStore } from "./store.ts";
-import { CONFIG } from "../config.ts";
 import { createApiHandler } from "./routes.ts";
 
 const store = createStore();
@@ -15,8 +14,5 @@ function startServer(port: number): ReturnType<typeof Bun.serve> {
     },
   });
 }
-
-// prettier-ignore
-if (import.meta.main) console.log(`Todo app listening on http://localhost:${startServer(CONFIG.port).port}`);
 
 export { startServer, createStore };
