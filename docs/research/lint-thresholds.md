@@ -41,10 +41,10 @@ Sub-questions: are these the right units? Should thresholds differ by file type 
 
 ## Summary of defaults (unchanged)
 
-| Lint | Default | Unit | File-type notes |
-|---|---|---|---|
-| wide-directory | 7 | direct children (files + subdirs), excluding hidden/vendor/generated/test dirs | Exclude tests, fixtures, generated, vendor |
-| long-file | 300 | physical lines | Exempt tests (or 500), generated, fixtures, `*.d.ts`; optional skipBlankLines/skipComments |
+| Lint           | Default | Unit                                                                           | File-type notes                                                                            |
+| -------------- | ------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| wide-directory | 7       | direct children (files + subdirs), excluding hidden/vendor/generated/test dirs | Exclude tests, fixtures, generated, vendor                                                 |
+| long-file      | 300     | physical lines                                                                 | Exempt tests (or 500), generated, fixtures, `*.d.ts`; optional skipBlankLines/skipComments |
 
 ## Recommendation
 
@@ -54,8 +54,8 @@ Keep both defaults at their baselines: **7 / 300**. Long-file 300 is corroborate
 
 - ESLint `max-lines` rule docs (default `max: 300`, "recommendations usually range from 100 to 500 lines"): https://eslint.org/docs/latest/rules/max-lines
 - Bun linter `max-lines` (default `max = 300`): https://bun.com/docs/lint/rules/eslint/max-lines
-- Ousterhout, *A Philosophy of Software Design* — deep vs. shallow modules (working-memory / interface-cost framing): https://softengbook.org/articles/deep-modules
+- Ousterhout, _A Philosophy of Software Design_ — deep vs. shallow modules (working-memory / interface-cost framing): https://softengbook.org/articles/deep-modules
 - Miller's law (7±2) — rationale for `HELD_IN_MIND = 7` in the Rust original.
 - Empirical calibration: local repos `/home/graff/projects/{deslop-please-ts,ts-template,ts-quality}` (file/dir counts via `find`/`wc`).
 - Project map (issue #1): constants note "start at 7 (HELD_IN_MIND) ... 300 lines for long-file".
-PY
+  PY

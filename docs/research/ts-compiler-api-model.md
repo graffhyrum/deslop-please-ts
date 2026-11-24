@@ -26,8 +26,15 @@ import path from "node:path";
 
 const configPath = ts.findConfigFile(root, ts.sys.fileExists, "tsconfig.json");
 const { config } = ts.readConfigFile(configPath, ts.sys.readFile);
-const parsed = ts.parseJsonConfigFileContent(config, ts.sys, path.dirname(configPath));
-const program = ts.createProgram({ rootNames: parsed.fileNames, options: parsed.options });
+const parsed = ts.parseJsonConfigFileContent(
+  config,
+  ts.sys,
+  path.dirname(configPath),
+);
+const program = ts.createProgram({
+  rootNames: parsed.fileNames,
+  options: parsed.options,
+});
 ```
 
 - `program.getSourceFiles()` returns every file transitively pulled in (roots + imports + `@types` + lib `.d.ts`).
@@ -42,16 +49,16 @@ TS 6.0 and earlier API. TS 7.x has a completely different (Go-based) API — pin
 
 Walk each `SourceFile` with `ts.forEachChild` / `ts.forEachChild` recursively. Classify by `ts.is*` guards and kind:
 
-| TS construct | ItemKind | Notes |
-|---|---|---|
-| `SourceFile`/module | Module | one per file; module node in Tree |
-| `class` / `interface` / `type` alias / `enum` | Type | |
-| `function` declaration/expression | Function | |
-| class/interface method | Function (member) | `parent` = owning type item |
-| property/field | Field | `parent` = owning type |
-| `const`/`let`/`var` at module scope | Constant | |
-| enum member | Variant/Constant | |
-| `namespace`/`module` | Module (inline) | maps to Tree child node |
+| TS construct                                  | ItemKind          | Notes                             |
+| --------------------------------------------- | ----------------- | --------------------------------- |
+| `SourceFile`/module                           | Module            | one per file; module node in Tree |
+| `class` / `interface` / `type` alias / `enum` | Type              |                                   |
+| `function` declaration/expression             | Function          |                                   |
+| class/interface method                        | Function (member) | `parent` = owning type item       |
+| property/field                                | Field             | `parent` = owning type            |
+| `const`/`let`/`var` at module scope           | Constant          |                                   |
+| enum member                                   | Variant/Constant  |                                   |
+| `namespace`/`module`                          | Module (inline)   | maps to Tree child node           |
 
 Use `ts.getCombinedModifierFlags(node)` for export/visibility; `node.name` (Identifier) for the name. `checker.getSymbolAtLocation(name)` gives the symbol; record `symbol` -> ItemId in a `Map<ts.Symbol, ItemId>` for identity. For merged declarations (overloads, interface merging) the same symbol appears multiple times — dedupe by symbol, or record `None` definition (Rust does this for multi-defined items).
 
@@ -98,6 +105,7 @@ For accessor calls: a reference to an accessor item has `copies = true` iff the 
 No built-in "is wrapper" in the TS API. Heuristic over the **function body AST** and the **names it references** (mirroring Rust's `forwarders.rs`/`accessors.rs`).
 
 **Forwarder**: a function whose body is a single call to another workspace function, passing its own parameters on (possibly through a field of `this`), and nothing else. Algorithm:
+
 1. Collect the identifiers/names referenced inside the function body in source order.
 2. Split leading signature (params + types) from body.
 3. Find the first call expression in the body; its callee resolves to a workspace Function item.
@@ -108,6 +116,7 @@ No built-in "is wrapper" in the TS API. Heuristic over the **function body AST**
 TS-specific: receiver may be `this.field` (field path of self). `this` is implicit; detect `ThisKeyword`. Parameters are the function's parameter identifiers.
 
 **Accessor**: an inherent method with a `self`/`this` receiver whose body only hands out or overwrites fields of `this`: names one or more fields of its own type and nothing else of the workspace but types; each field's type is written in the signature. Algorithm:
+
 1. Method's first parameter is `this` (implicit for methods) or an explicit `this: T` param.
 2. Collect referenced identifiers; all must be `OwnField` (a field of the method's owning type) or `Type`.
 3. Body must not compute (no calls other than field access, no arithmetic, no `len()`). Heuristic: `computes = false` unless body contains call expressions beyond property access, binary ops beyond assignment, or control flow.

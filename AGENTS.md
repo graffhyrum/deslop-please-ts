@@ -1,9 +1,12 @@
 ##
 
+This repo is `deslop-please-ts`, a TypeScript architectural linter. The product is the CLI in `src/cli.ts`. The model is in `src/model.ts` and the six checks are in `src/lint.ts`. The todo app files under `src/` are sample fixtures, not the product.
+
 ## Commands
 
-- `bun run dev` - Run `src/index.ts` with reload
-- `bun run build` - Build for production
+- `bun run deslop` - Run the linter on the current directory
+- `bun run dev` - Run the CLI entry with reload
+- `bun run build` - Bundle the CLI for Node
 - `bun run test` - Run all tests
 - `bun run test <pattern>` - Run specific tests matching pattern
 - `bun run typecheck` - Type-check with `bun check`
