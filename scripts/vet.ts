@@ -1,12 +1,21 @@
 import { capture, type Capture } from "./capture.ts";
 
-type Step = {
+export type Step = {
   readonly label: string;
   readonly argv: readonly string[];
 };
 
-const steps: readonly Step[] = [
-  { label: "fmt", argv: ["bun", "run", "fmt:check"] },
+export type StepResult = {
+  readonly label: string;
+  readonly exitCode: number;
+};
+
+export type VetReport = {
+  readonly results: readonly StepResult[];
+};
+
+export const steps: readonly Step[] = [
+  { label: "fmt", argv: ["bun", "run", "fmt"] },
   { label: "audit", argv: ["bun", "audit"] },
   { label: "typecheck", argv: ["bun", "run", "typecheck"] },
   { label: "lint", argv: ["bun", "run", "lint"] },
@@ -18,20 +27,47 @@ const steps: readonly Step[] = [
   { label: "test", argv: ["bun", "run", "test:coverage"] },
 ];
 
-await runGate(steps);
-
-async function runGate(gateSteps: readonly Step[]): Promise<void> {
-  for (const step of gateSteps) {
-    await runStep(step);
-  }
-  process.exit(0);
+if (import.meta.main) {
+  await main();
 }
 
-async function runStep(step: Step): Promise<void> {
+async function main(): Promise<void> {
+  const args = process.argv.slice(2);
+  const known = new Set(["--all", "--json"]);
+  const unknown = args.filter((arg) => !known.has(arg));
+  if (unknown.length > 0) {
+    process.stderr.write(`vet: unknown option ${unknown.join(", ")}\n`);
+    process.exitCode = 2;
+    return;
+  }
+
+  const stopOnFailure = !args.includes("--all");
+  const json = args.includes("--json");
+  const results = await runGate(steps, stopOnFailure, json);
+  if (json) console.log(JSON.stringify({ results } satisfies VetReport));
+  process.exitCode = results.some((result) => result.exitCode !== 0) ? 1 : 0;
+}
+
+export async function runGate(
+  gateSteps: readonly Step[],
+  stopOnFailure = true,
+  quiet = false,
+): Promise<readonly StepResult[]> {
+  const results: StepResult[] = [];
+  for (const step of gateSteps) {
+    const result = await runStep(step, quiet);
+    results.push({ label: step.label, exitCode: result.exitCode });
+    if (result.exitCode === 0) continue;
+    if (stopOnFailure) break;
+  }
+  return results;
+}
+
+async function runStep(step: Step, quiet: boolean): Promise<Capture> {
   const result = await capture(step.argv);
-  if (result.exitCode === 0) return;
+  if (result.exitCode === 0 || quiet) return result;
   reportFailure(step.label, result);
-  process.exit(result.exitCode);
+  return result;
 }
 
 function reportFailure(label: string, result: Capture): void {
