@@ -11,7 +11,7 @@ function startServer(port: number): ReturnType<typeof Bun.serve> {
     port,
     routes: {
       "/": indexHtml,
-      "/api/*": async (request) => apiHandler(request),
+      "/api/*": (request) => apiHandler(request),
     },
   });
 }

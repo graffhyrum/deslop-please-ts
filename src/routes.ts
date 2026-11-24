@@ -15,7 +15,7 @@ export type RouteResult = {
 export function createApiHandler(
   store: Store,
 ): (request: Request) => Promise<Response> {
-  return async (request: Request) => handleRequest(store, request);
+  return (request: Request) => handleRequest(store, request);
 }
 
 async function handleRequest(
@@ -30,7 +30,7 @@ async function handleRequest(
     return jsonResponse(200, store.listTenants());
   }
   if (path === "/api/tenants" && method === "POST") {
-    return handleCreateTenant(store, request);
+    return await handleCreateTenant(store, request);
   }
   if (path === "/api/todos" && method === "GET") {
     return handleListTodos(store, url);
@@ -61,7 +61,7 @@ async function handleCreateTenant(
   return jsonResponse(201, tenant);
 }
 
-async function handleListTodos(store: Store, url: URL): Promise<Response> {
+function handleListTodos(store: Store, url: URL): Response {
   const tenantId = parseTenantId(url.searchParams.get("tenantId"));
   if (tenantId === undefined)
     return jsonResponse(400, { error: "invalid tenant id" });
@@ -90,11 +90,7 @@ async function handleCreateTodo(
   return jsonResponse(201, todo);
 }
 
-async function handleToggleTodo(
-  store: Store,
-  id: TodoId,
-  url: URL,
-): Promise<Response> {
+function handleToggleTodo(store: Store, id: TodoId, url: URL): Response {
   const tenantId = parseTenantId(url.searchParams.get("tenantId"));
   if (tenantId === undefined)
     return jsonResponse(400, { error: "invalid tenant id" });
@@ -106,11 +102,7 @@ async function handleToggleTodo(
   return jsonResponse(200, todo);
 }
 
-async function handleDeleteTodo(
-  store: Store,
-  id: TodoId,
-  url: URL,
-): Promise<Response> {
+function handleDeleteTodo(store: Store, id: TodoId, url: URL): Response {
   const tenantId = parseTenantId(url.searchParams.get("tenantId"));
   if (tenantId === undefined)
     return jsonResponse(400, { error: "invalid tenant id" });

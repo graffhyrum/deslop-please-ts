@@ -25,9 +25,9 @@ export async function capture(
   return { exitCode: exitCode ?? 1, stdout, stderr };
 }
 
-async function readStream(
+function readStream(
   stream: ReadableStream<Uint8Array> | number | null | undefined,
 ): Promise<string> {
-  if (stream == null || typeof stream === "number") return "";
+  if (stream == null || typeof stream === "number") return Promise.resolve("");
   return new Response(stream).text();
 }
