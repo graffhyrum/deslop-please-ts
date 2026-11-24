@@ -10,6 +10,7 @@ const steps: readonly Step[] = [
   { label: "audit", argv: ["bun", "audit"] },
   { label: "typecheck", argv: ["bun", "run", "typecheck"] },
   { label: "lint", argv: ["bun", "run", "lint"] },
+  { label: "lint:boundaries", argv: ["bun", "run", "lint:boundaries"] },
   { label: "rule-validator", argv: ["bun", "run", "rule-validator"] },
   { label: "stepdown", argv: ["bun", "run", "stepdown"] },
   { label: "crap4ts", argv: ["bun", "run", "crap4ts"] },
