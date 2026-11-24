@@ -38,7 +38,7 @@ async function handleRequest(
   if (path === "/api/todos" && method === "POST") {
     return handleCreateTodo(store, request);
   }
-  const todoMatch = path.match(/^\/api\/todos\/([^/]+)$/);
+  const todoMatch = /^\/api\/todos\/([^/]+)$/.exec(path);
   if (todoMatch !== null) {
     const id = parseTodoId(todoMatch[1]) as TodoId;
     if (method === "PATCH") return handleToggleTodo(store, id, url);
