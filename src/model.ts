@@ -333,7 +333,10 @@ function classifyDeclaration(node: ts.Node): ItemKind | null {
   ) {
     return "function";
   }
-  if (ts.isPropertyDeclaration(node) || ts.isPropertySignature(node)) {
+  // Only class property declarations are implementation fields that can leak.
+  // Interface/type-alias property signatures are part of the public contract
+  // of a type, not leaked implementation fields (see issue #7).
+  if (ts.isPropertyDeclaration(node)) {
     return "field";
   }
   return null;
