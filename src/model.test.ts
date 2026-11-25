@@ -99,9 +99,7 @@ test("computeCopies marks an assignment LHS as non-copy", () => {
   const model = buildModel(ASSIGN);
   const mutItem = model.items.find((i) => i.name === "MUT");
   expect(mutItem).toBeDefined();
-  const ref = model.references.find(
-    (r) => r.item === mutItem?.id && r.copies === false,
-  );
+  const ref = model.references.find((r) => r.item === mutItem?.id && !r.copies);
   expect(ref).toBeDefined();
 });
 

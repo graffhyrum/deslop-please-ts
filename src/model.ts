@@ -1,15 +1,7 @@
 import * as ts from "typescript";
 import path from "node:path";
-const ASSIGNMENT_OPS = new Set<number>([
-  ts.SyntaxKind.EqualsToken,
-  ts.SyntaxKind.PlusEqualsToken,
-  ts.SyntaxKind.MinusEqualsToken,
-  ts.SyntaxKind.AsteriskEqualsToken,
-  ts.SyntaxKind.SlashEqualsToken,
-  ts.SyntaxKind.PercentEqualsToken,
-]);
-export type ModuleId = number;
-export type ItemId = number;
+export type ModuleId = number & { readonly __brand: "ModuleId" };
+export type ItemId = number & { readonly __brand: "ItemId" };
 export type ItemKind =
   "module" | "type" | "function" | "field" | "constant" | "other";
 export type ModuleInfo = {
@@ -79,7 +71,7 @@ export function buildModel(root: string): Model {
   const modules: ModuleInfo[] = [];
   const pathToModule = new Map<string, ModuleId>();
   for (const sf of sourceFiles) {
-    const id = modules.length;
+    const id = toModuleId(modules.length);
     modules.push({
       id,
       path: sf.fileName,
@@ -114,12 +106,11 @@ export function buildModel(root: string): Model {
     if (moduleId === undefined) continue;
     collectImports(sf, moduleId, checker, pathToModule, imports);
   }
-  return { root, modules, items, references, imports };
+  return { root, modules, items, references, imports } satisfies Model;
 }
 export function formatModel(model: Model): string {
   const lines: string[] = [];
-  lines.push(`Model root: ${model.root}`);
-  lines.push(`Modules (${model.modules.length}):`);
+  lines.push(`Model root: ${model.root}`, `Modules (${model.modules.length}):`);
   for (const m of model.modules) lines.push(`  [${m.id}] ${m.path}`);
   lines.push(`Items (${model.items.length}):`);
   for (const it of model.items) {
@@ -155,19 +146,19 @@ function collectItems(
       for (const decl of node.declarationList.declarations) {
         const n = ts.isIdentifier(decl.name) ? decl.name.text : null;
         if (n) {
-          addItem(
+          addItem({
             items,
             nodeToItem,
             symbolToItem,
             checker,
-            "constant",
-            n,
-            decl,
+            kind: "constant",
+            name: n,
+            node: decl,
             sourceFile,
             moduleId,
-            parentItemId,
+            parent: parentItemId,
             exported,
-          );
+          });
         }
       }
       ts.forEachChild(node, (c) => visit(c, parentItemId));
@@ -176,7 +167,7 @@ function collectItems(
     const kind = classifyDeclaration(node);
     const name = kind ? nameOf(node) : null;
     if (kind && name) {
-      const id = addItem(
+      const id = addItem({
         items,
         nodeToItem,
         symbolToItem,
@@ -186,9 +177,9 @@ function collectItems(
         node,
         sourceFile,
         moduleId,
-        parentItemId,
-        isExported(node),
-      );
+        parent: parentItemId,
+        exported: isExported(node),
+      });
       const childParent = kind === "type" ? id : parentItemId;
       ts.forEachChild(node, (c) => visit(c, childParent));
       return;
@@ -207,30 +198,13 @@ function collectReferences(
 ): void {
   function visit(node: ts.Node, holder: ItemId | null): void {
     const itemForNode = nodeToItem.get(node);
-    const newHolder = itemForNode !== undefined ? itemForNode : holder;
+    const newHolder = itemForNode ?? holder;
     if (ts.isIdentifier(node)) {
-      const parentNode = node.parent as ts.Node | undefined;
-      const parentNodeWithName = parentNode as
-        | {
-            name?: ts.Node;
-          }
-        | undefined;
-      const isDeclarationNode =
-        parentNode !== undefined &&
-        (ts.isClassDeclaration(parentNode) ||
-          ts.isInterfaceDeclaration(parentNode) ||
-          ts.isTypeAliasDeclaration(parentNode) ||
-          ts.isEnumDeclaration(parentNode) ||
-          ts.isFunctionDeclaration(parentNode) ||
-          ts.isMethodDeclaration(parentNode) ||
-          ts.isMethodSignature(parentNode) ||
-          ts.isPropertyDeclaration(parentNode) ||
-          ts.isPropertySignature(parentNode) ||
-          ts.isGetAccessorDeclaration(parentNode) ||
-          ts.isSetAccessorDeclaration(parentNode) ||
-          ts.isVariableDeclaration(parentNode));
+      const parentNode: ts.Node | undefined = node.parent;
+
+      const isDeclarationNode = isDeclarationParent(parentNode);
       const isDeclarationName =
-        isDeclarationNode && parentNodeWithName?.name === node;
+        isDeclarationNode && declaredName(parentNode) === node;
       if (!isDeclarationName) {
         const sym = checker.getSymbolAtLocation(node);
         if (sym) {
@@ -266,7 +240,7 @@ function collectImports(
   function visit(node: ts.Node): void {
     if (ts.isImportDeclaration(node)) {
       const clause = node.importClause;
-      const typeOnly = clause?.isTypeOnly ?? false;
+      const typeOnly = clause?.phaseModifier === ts.SyntaxKind.TypeKeyword;
       addEdge(node.moduleSpecifier, typeOnly, false);
     } else if (ts.isExportDeclaration(node)) {
       if (node.moduleSpecifier)
@@ -296,20 +270,33 @@ function collectImports(
     edges.push({ from: moduleId, to, typeOnly, dynamic });
   }
 }
-function addItem(
-  items: Item[],
-  nodeToItem: Map<ts.Node, ItemId>,
-  symbolToItem: Map<ts.Symbol, ItemId>,
-  checker: ts.TypeChecker,
-  kind: ItemKind,
-  name: string,
-  node: ts.Node,
-  sourceFile: ts.SourceFile,
-  moduleId: ModuleId,
-  parent: ItemId | null,
-  exported: boolean,
-): ItemId {
-  const id = items.length;
+function addItem(params: {
+  items: Item[];
+  nodeToItem: Map<ts.Node, ItemId>;
+  symbolToItem: Map<ts.Symbol, ItemId>;
+  checker: ts.TypeChecker;
+  kind: ItemKind;
+  name: string;
+  node: ts.Node;
+  sourceFile: ts.SourceFile;
+  moduleId: ModuleId;
+  parent: ItemId | null;
+  exported: boolean;
+}): ItemId {
+  const {
+    items,
+    nodeToItem,
+    symbolToItem,
+    checker,
+    kind,
+    name,
+    node,
+    sourceFile,
+    moduleId,
+    parent,
+    exported,
+  } = params;
+  const id = toItemId(items.length);
   items.push({
     id,
     kind,
@@ -321,11 +308,7 @@ function addItem(
     exported,
   });
   nodeToItem.set(node, id);
-  const nameNode = (
-    node as {
-      name?: ts.Node;
-    }
-  ).name;
+  const nameNode = declaredName(node);
   if (nameNode) {
     const sym = checker.getSymbolAtLocation(nameNode);
     if (sym) symbolToItem.set(sym, id);
@@ -356,32 +339,33 @@ function classifyDeclaration(node: ts.Node): ItemKind | null {
   return null;
 }
 function isExported(node: ts.Node): boolean {
-  const flags = ts.getCombinedModifierFlags(node as ts.Declaration);
-  return (flags & ts.ModifierFlags.Export) !== 0;
+  if (!ts.canHaveModifiers(node)) return false;
+  const modifiers = ts.getModifiers(node);
+  return (
+    modifiers?.some(
+      (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+    ) ?? false
+  );
 }
 function nameOf(node: ts.Node): string | null {
-  const n = (
-    node as {
-      name?: ts.Node;
-    }
-  ).name;
+  const n = declaredName(node);
   if (!n) return null;
   if (ts.isIdentifier(n)) return n.text;
   if (ts.isLiteralExpression(n)) {
-    return String((n as ts.LiteralExpression).text);
+    return String(n.text);
   }
   return null;
 }
 function computeCopies(node: ts.Identifier): boolean {
   const parent = node.parent;
   if (!parent) return true;
-  const accessNode =
-    ts.isPropertyAccessExpression(parent) && parent.name === node
-      ? parent
-      : ts.isElementAccessExpression(parent) &&
-          parent.argumentExpression === node
-        ? parent
-        : node;
+  let accessNode: ts.Node = node;
+  if (
+    (ts.isPropertyAccessExpression(parent) && parent.name === node) ||
+    (ts.isElementAccessExpression(parent) && parent.argumentExpression === node)
+  ) {
+    accessNode = parent;
+  }
   const container = accessNode.parent;
   if (
     ts.isBinaryExpression(container) &&
@@ -390,18 +374,58 @@ function computeCopies(node: ts.Identifier): boolean {
   ) {
     return false;
   }
-  if (
+  return !(
     (ts.isPropertyAccessExpression(container) ||
       ts.isElementAccessExpression(container)) &&
     container.expression === accessNode
-  ) {
-    return false;
-  }
-  return true;
+  );
 }
 function lineOf(sourceFile: ts.SourceFile, node: ts.Node): number {
   return ts.getLineAndCharacterOfPosition(sourceFile, node.getStart()).line + 1;
 }
+const ASSIGNMENT_OPS = new Set<number>([
+  ts.SyntaxKind.EqualsToken,
+  ts.SyntaxKind.PlusEqualsToken,
+  ts.SyntaxKind.MinusEqualsToken,
+  ts.SyntaxKind.AsteriskEqualsToken,
+  ts.SyntaxKind.SlashEqualsToken,
+  ts.SyntaxKind.PercentEqualsToken,
+]);
+
 function isAssignmentOp(kind: number): boolean {
   return ASSIGNMENT_OPS.has(kind);
+}
+export function toModuleId(value: number): ModuleId {
+  return value as ModuleId;
+}
+export function toItemId(value: number): ItemId {
+  return value as ItemId;
+}
+function declaredName(node: ts.Node): ts.Node | undefined {
+  const value: unknown = Reflect.get(node, "name");
+  if (!isTsNode(value)) return undefined;
+  return value;
+}
+
+function isTsNode(value: unknown): value is ts.Node {
+  if (typeof value !== "object" || value === null) return false;
+  if (!("kind" in value)) return false;
+  return typeof Reflect.get(value, "kind") === "number";
+}
+function isDeclarationParent(node: ts.Node | undefined): boolean {
+  if (node === undefined) return false;
+  return (
+    ts.isClassDeclaration(node) ||
+    ts.isInterfaceDeclaration(node) ||
+    ts.isTypeAliasDeclaration(node) ||
+    ts.isEnumDeclaration(node) ||
+    ts.isFunctionDeclaration(node) ||
+    ts.isMethodDeclaration(node) ||
+    ts.isMethodSignature(node) ||
+    ts.isPropertyDeclaration(node) ||
+    ts.isPropertySignature(node) ||
+    ts.isGetAccessorDeclaration(node) ||
+    ts.isSetAccessorDeclaration(node) ||
+    ts.isVariableDeclaration(node)
+  );
 }
