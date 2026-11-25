@@ -1,0 +1,34 @@
+schema_version: 2
+name: playbook
+description: Auto-generated from cass-memory reflections
+metadata:
+  createdAt: 2026-11-25T04:34:56.150Z
+  totalReflections: 0
+  totalSessionsProcessed: 0
+deprecatedPatterns: []
+bullets:
+  - id: b-mwvmqr6e-r5rsl0
+    content: In deslop-please-ts, keep just-say-no-to-process-porn-and-ceremony
+      session-only. The user declined the durable AGENTS.md block on 2026-11-24;
+      do not offer it again unless the user reopens the decision.
+    category: workflow
+    kind: workflow_rule
+    type: rule
+    isNegative: false
+    scope: workspace
+    source: learned
+    tags: []
+    state: draft
+    maturity: candidate
+    createdAt: 2026-11-25T04:34:56.150Z
+    updatedAt: 2026-11-25T04:34:56.150Z
+    sourceSessions:
+      - manual-cli
+    sourceAgents:
+      - unknown
+    helpfulCount: 0
+    harmfulCount: 0
+    feedbackEvents: []
+    deprecated: false
+    pinned: false
+    confidenceDecayHalfLifeDays: 90

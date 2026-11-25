@@ -1,15 +1,14 @@
 # deslop-please-ts
 
-[![CI](https://github.com/graffhyrum/deslop-please-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/graffhyrum/deslop-please-ts/actions/workflows/ci.yml)
-[![Bun](https://img.shields.io/badge/Bun-1.4.4-f9f1e1?logo=bun)](https://bun.sh)
-
 An opinionated architectural linter for TypeScript and JavaScript. It finds sloppy code structure and follows _A Philosophy of Software Design_ by John Ousterhout: deep modules, narrow interfaces.
+
+**Who it's for:** TypeScript/JavaScript developers who want a second opinion on module boundaries, import tangles, and interface width — beyond what ESLint and TypeScript already check.
+
+**Why choose it:** one tool, six checks, rustc-style diagnostics with file:line locations and exit codes. It reads your `tsconfig.json` project through the TypeScript compiler API, so it sees the same module graph your build does. This is a linter, not a project template — the multi-tenant todo app under `src/packages/todo-app/` is a sample fixture, not the product.
 
 This is a TypeScript port of [deterministic-machines/deslop-please](https://github.com/deterministic-machines/deslop-please), the Rust linter. The Rust version reads a Cargo workspace through SCIP. This version reads a `tsconfig.json` project through the TypeScript compiler API. A module is one file. Directories are layout only.
 
-This is a linter, not a project template. The multi-tenant todo app under `src/packages/todo-app/` is a sample package kept as a fixture. It is not the product.
-
-## Run it
+## Quickstart
 
 ```bash
 bun install
@@ -28,6 +27,10 @@ deslop-please-ts: 1 errors, well done!
 
 Exit codes are `0` for a clean project, `1` when errors are found, and `2` for bad input or an internal error. The linter writes diagnostics to stdout and nothing else when the project is clean.
 
+Prerequisites: [Bun](https://bun.sh) 1.4+. A `tsconfig.json` in the project root (the linter discovers files through it).
+
+## Common commands
+
 ```bash
 bun run deslop .                     # lint the current directory
 bun run deslop . --model             # print the extracted model instead
@@ -35,6 +38,8 @@ bun run deslop . --held-in-mind 10   # raise the width and tangle threshold
 bun run deslop . --max-lines 500     # raise the long-file threshold
 bun run deslop --help
 ```
+
+See `bun run deslop --help` for the full option list.
 
 ## The six checks
 
@@ -86,3 +91,8 @@ Process entrypoints live in `bin/`, not `src/`. `bin/deslop.ts` is the product e
 ## License
 
 MIT
+
+---
+
+[![CI](https://github.com/graffhyrum/deslop-please-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/graffhyrum/deslop-please-ts/actions/workflows/ci.yml)
+[![Bun](https://img.shields.io/badge/Bun-1.4.4-f9f1e1?logo=bun)](https://bun.sh)

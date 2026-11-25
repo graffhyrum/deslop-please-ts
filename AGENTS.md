@@ -12,7 +12,7 @@ This repo is `deslop-please-ts`, a TypeScript architectural linter. The product 
 - `bun run typecheck` - Type-check with `bun check`
 - `bun run lint` - Lint with oxlint (type-aware)
 - `bun run fmt` - Format with `bun fmt`
-- `bun run vet` - Quiet quality gate. Order: fmt, audit, typecheck, lint, rule-validator, stepdown, crap4ts, test
+- `bun run vet` - Quiet quality gate. Order: fmt, audit, typecheck, lint, deslop, lint:boundaries, rule-validator, stepdown, crap4ts, test
 
 ## Code Style
 
@@ -79,3 +79,20 @@ HTML can import `.tsx`/`.css` directly. Run with `bun --hot ./index.ts`
 ## Packages
 
 Packages are deep modules: see [src/packages/README.md](./src/packages/README.md) before adding or importing one.
+
+## Rule table
+
+Each rule pairs with what enforces it. When a rule has no enforcer, that is a gap: fix it at the highest level that works before adding more text.
+
+| Rule                                                                                                                                                                    | Enforcer                                                                                           |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Test-file recognition uses `isTestFile()` from `test-file.ts` (single owner). Never inline `.test.ts`/`.spec.ts` suffix checks.                                         | `test-file.ts` (centralized function); `src/lint.ts` and `scripts/coverage-threshold.ts` import it |
+| Test files are exempt from field-leak, shallow-module, and long-file checks.                                                                                            | `isTestFile()` guards in `src/lint.ts`                                                             |
+| The linter's own core modules (`cli.ts`, `lint.ts`, `model.ts`) define public data-model types: their fields are exempt from field-leak and the modules from long-file. | `isCoreModule()` in `src/lint.ts`                                                                  |
+| Non-product paths (`scripts/`, `src/packages/todo-app/`) are excluded from all checks.                                                                                  | `DEFAULT_OPTIONS.excluded` in `src/lint.ts`                                                        |
+| Do not unify two types solely because they have identical fields. Unify only when they represent the same concept and would change together.                            | None yet (judgment). Revert if a shared type couples two domains.                                  |
+| Direct imports only, no barrel exports.                                                                                                                                 | dependency-cruiser (`.dependency-cruiser.cjs`) + AGENTS.md                                         |
+| Factory functions, not ES6 classes.                                                                                                                                     | oxlint (type-aware) + AGENTS.md                                                                    |
+| ArkType for runtime validation; @arkenv/core for env.                                                                                                                   | AGENTS.md (config.ts is critical)                                                                  |
+| Template literals, no `+` concatenation.                                                                                                                                | AGENTS.md                                                                                          |
+| `bun run deslop` must pass on the repo's own non-exempt source.                                                                                                         | `bun run deslop` (CI)                                                                              |
