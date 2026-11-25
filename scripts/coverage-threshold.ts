@@ -1,4 +1,5 @@
 import { capture, type Capture } from "./capture.ts";
+import { isTestFile } from "../test-file.ts";
 
 // Green baseline for this sample: every gated file is fully covered.
 const FUNCTION_THRESHOLD = 100;
@@ -143,7 +144,7 @@ function normalizePath(file: string): string {
 }
 
 function isGatedFile(file: string): boolean {
-  if (file.endsWith(".test.ts")) return false;
+  if (isTestFile(file)) return false;
   if (file === "src/packages/todo-app/client.ts") return false;
   if (file === "config.ts") return true;
   return file.startsWith("src/");

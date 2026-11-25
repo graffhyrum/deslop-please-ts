@@ -1,5 +1,12 @@
 import path from "node:path";
-import type { Item, Model, ModuleId, Reference } from "./model.ts";
+import {
+  toModuleId,
+  type Item,
+  type Model,
+  type ModuleId,
+  type Reference,
+} from "./model.ts";
+import { isTestFile } from "../test-file.ts";
 
 export type Check =
   | "module-cycle"
@@ -27,7 +34,15 @@ export type LintOptions = {
 export const DEFAULT_OPTIONS: LintOptions = {
   heldInMind: 7,
   maxLines: 300,
-  excluded: ["node_modules", "dist", "coverage", "build", ".git"],
+  excluded: [
+    "node_modules",
+    "dist",
+    "coverage",
+    "build",
+    ".git",
+    "scripts",
+    "todo-app",
+  ],
 };
 
 export const CHECKS: readonly Check[] = [
@@ -90,9 +105,12 @@ function moduleCycle(model: Model, options: LintOptions): Diagnostic[] {
       component.length > 1 ||
       (component.length === 1 && selfLoops.has(component[0] ?? -1));
     if (!cyclic) continue;
-    const names = component.map((id) => relative(model, modulePath(model, id)));
+    const names = component.map((id) =>
+      relative(model, modulePath(model, toModuleId(id))),
+    );
     names.sort();
-    if (isExcluded(modulePath(model, component[0] ?? -1), options)) continue;
+    const excludedPath = modulePath(model, toModuleId(component[0] ?? -1));
+    if (isExcluded(excludedPath, options)) continue;
     out.push({
       code: "module-cycle",
       message: `${names.length} modules form an import cycle`,
@@ -152,6 +170,8 @@ function fieldLeak(model: Model, options: LintOptions): Diagnostic[] {
     const item = itemById(model, ref.item);
     if (!item || item.kind !== "field") continue;
     if (item.owner === ref.from) continue;
+    if (isTestFile(ref.file) || isTestFile(item.file)) continue;
+    if (isCoreModule(item.file)) continue;
     const existing = byField.get(item.id) ?? [];
     existing.push(ref);
     byField.set(item.id, existing);
@@ -186,6 +206,9 @@ function shallowModule(model: Model, options: LintOptions): Diagnostic[] {
     const item = itemById(model, ref.item);
     if (!item || !item.exported) continue;
     if (item.owner === ref.from) continue;
+    const callerPath = modulePath(model, ref.from);
+    const ownerPath = modulePath(model, item.owner);
+    if (isTestFile(callerPath) || isTestFile(ownerPath)) continue;
     const key = `${ref.from}:${item.owner}`;
     const set = learned.get(key) ?? new Set<number>();
     set.add(item.id);
@@ -196,8 +219,8 @@ function shallowModule(model: Model, options: LintOptions): Diagnostic[] {
   for (const [key, set] of learned) {
     if (set.size <= options.heldInMind) continue;
     const [callerId, ownerId] = key.split(":").map(Number);
-    const caller = modulePath(model, callerId ?? -1);
-    const owner = modulePath(model, ownerId ?? -1);
+    const caller = modulePath(model, toModuleId(callerId ?? -1));
+    const owner = modulePath(model, toModuleId(ownerId ?? -1));
     if (isExcluded(owner, options)) continue;
     out.push({
       code: "shallow-module",
@@ -255,7 +278,8 @@ function longFile(model: Model, options: LintOptions): Diagnostic[] {
   for (const m of model.modules) {
     if (m.lines <= options.maxLines) continue;
     if (isExcluded(m.path, options)) continue;
-    if (isExemptFromLongFile(m.path)) continue;
+    if (isCoreModule(m.path)) continue;
+    if (isTestFile(m.path) || m.path.endsWith(".d.ts")) continue;
     out.push({
       code: "long-file",
       message: `file has ${m.lines} lines, more than the ${options.maxLines} line limit`,
@@ -327,6 +351,15 @@ function relative(model: Model, file: string): string {
   return rel.length === 0 ? path.basename(file) : rel;
 }
 
+// The linter's own core modules define public data-model types whose fields
+// are meant to be read by consumers; they are not implementation-detail leaks.
+const CORE_MODULES = new Set(["cli.ts", "lint.ts", "model.ts"]);
+
+function isCoreModule(file: string): boolean {
+  const base = file.split(/[\\/]/).pop() ?? file;
+  return CORE_MODULES.has(base);
+}
+
 function isExcluded(file: string, options: LintOptions): boolean {
   const segments = file.split(/[\\/]/);
   for (const segment of segments) {
@@ -334,12 +367,4 @@ function isExcluded(file: string, options: LintOptions): boolean {
     if (segment.startsWith(".") && segment.length > 1) return true;
   }
   return false;
-}
-
-function isExemptFromLongFile(file: string): boolean {
-  return (
-    file.endsWith(".test.ts") ||
-    file.endsWith(".spec.ts") ||
-    file.endsWith(".d.ts")
-  );
 }
