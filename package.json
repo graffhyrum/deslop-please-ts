@@ -32,8 +32,8 @@
     "ratchet:init": "bun scripts/ratchet.ts --init",
     "version-packages": "changeset version",
     "release": "changeset publish",
-    "mutate4ts": "mutate4ts src/store.ts",
-    "mutate4ts:scan": "mutate4ts --scan src/store.ts",
+    "mutate4ts": "mutate4ts src/packages/todo-app/lib/store.ts",
+    "mutate4ts:scan": "mutate4ts --scan src/packages/todo-app/lib/store.ts",
     "lint:boundaries": "depcruise src/packages"
   },
   "dependencies": {

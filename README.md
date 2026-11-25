@@ -7,7 +7,7 @@ An opinionated architectural linter for TypeScript and JavaScript. It finds slop
 
 This is a TypeScript port of [deterministic-machines/deslop-please](https://github.com/deterministic-machines/deslop-please), the Rust linter. The Rust version reads a Cargo workspace through SCIP. This version reads a `tsconfig.json` project through the TypeScript compiler API. A module is one file. Directories are layout only.
 
-This is a linter, not a project template. The multi-tenant todo app under `src/` is a sample project kept as a fixture. It is not the product.
+This is a linter, not a project template. The multi-tenant todo app under `src/packages/todo-app/` is a sample package kept as a fixture. It is not the product.
 
 ## Run it
 

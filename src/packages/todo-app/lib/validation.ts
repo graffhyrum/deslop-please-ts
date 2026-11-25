@@ -17,12 +17,6 @@ export const parseTenantId = (value: unknown): TenantId | undefined => {
   return parsed as TenantId;
 };
 
-export const parseTodoId = (value: unknown): TodoId | undefined => {
-  const parsed = parseNonEmptyString(value);
-  if (parsed === undefined) return undefined;
-  return parsed as TodoId;
-};
-
 function parseNonEmptyString(value: unknown): string | undefined {
   const result = NonEmptyString(value);
   if (result instanceof type.errors) return undefined;

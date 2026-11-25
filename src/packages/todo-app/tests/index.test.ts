@@ -1,11 +1,19 @@
 import { beforeAll, expect, test } from "bun:test";
-import { startServer } from "./index.ts";
+import { startServer } from "../index.ts";
 
 test("startServer responds on /api/tenants", async () => {
   const server = startServer(0);
   const res = await fetch(`http://localhost:${server.port}/api/tenants`);
   expect(res.status).toBe(200);
   expect(await res.json()).toEqual([]);
+  void server.stop(true);
+});
+
+test("startServer serves the demo page", async () => {
+  const server = startServer(0);
+  const res = await fetch(`http://localhost:${server.port}/`);
+  expect(res.status).toBe(200);
+  expect(await res.text()).toContain("Multi-tenant Todo");
   void server.stop(true);
 });
 

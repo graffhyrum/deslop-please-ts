@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { renderTenantOptions, renderTodos } from "./client.ts";
+import { renderTenantOptions, renderTodos } from "../client.ts";
 
 test("renderTenantOptions produces options", () => {
   const html = renderTenantOptions([{ id: "t1", name: "Acme" }]);

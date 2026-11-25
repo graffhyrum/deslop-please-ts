@@ -19,10 +19,8 @@ export type Store = {
   readonly getTenant: (id: TenantId) => Tenant | undefined;
   readonly createTodo: (tenantId: TenantId, title: string) => Todo | undefined;
   readonly listTodos: (tenantId: TenantId) => readonly Todo[];
-  readonly getTodo: (id: TodoId) => Todo | undefined;
   readonly toggleTodo: (id: TodoId, tenantId: TenantId) => Todo | undefined;
   readonly deleteTodo: (id: TodoId, tenantId: TenantId) => boolean;
-  readonly todoBelongsToTenant: (todoId: TodoId, tenantId: TenantId) => boolean;
 };
 
 export function createStore(): Store {
@@ -35,14 +33,11 @@ export function createStore(): Store {
     listTenants: () => [...tenants.values()],
     getTenant: (id) => tenants.get(id),
     createTodo: (tenantId, title) =>
-      createTodoRecord(tenantId, title, tenants, todos, tenantTodos),
+      createTodoRecord(tenantId, title, todos, tenantTodos),
     listTodos: (tenantId) => listTodosForTenant(tenantId, todos, tenantTodos),
-    getTodo: (id) => todos.get(id),
     toggleTodo: (id, tenantId) => toggleTodoRecord(id, tenantId, todos),
     deleteTodo: (id, tenantId) =>
       deleteTodoRecord(id, tenantId, todos, tenantTodos),
-    todoBelongsToTenant: (todoId, tenantId) =>
-      isOwnedBy(todoId, tenantId, todos),
   };
 }
 
@@ -60,11 +55,9 @@ function createTenantRecord(
 function createTodoRecord(
   tenantId: TenantId,
   title: string,
-  tenants: Map<TenantId, Tenant>,
   todos: Map<TodoId, Todo>,
   tenantTodos: Map<TenantId, Set<TodoId>>,
 ): Todo | undefined {
-  if (!tenants.has(tenantId)) return undefined;
   const trimmed = title.trim();
   if (trimmed.length === 0) return undefined;
   const todo: Todo = {
@@ -123,16 +116,6 @@ function deleteTodoRecord(
   todos.delete(id);
   tenantTodos.get(tenantId)?.delete(id);
   return true;
-}
-
-function isOwnedBy(
-  todoId: TodoId,
-  tenantId: TenantId,
-  todos: Map<TodoId, Todo>,
-): boolean {
-  const todo = todos.get(todoId);
-  if (todo === undefined) return false;
-  return todo.tenantId === tenantId;
 }
 
 function newTenantId(): TenantId {

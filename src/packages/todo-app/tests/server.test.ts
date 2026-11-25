@@ -1,9 +1,8 @@
 import { expect, test } from "bun:test";
-import { createStore } from "./store.ts";
-import { createApiHandler } from "./routes.ts";
+import { createApiHandler } from "../server.ts";
 
 function handler() {
-  return createApiHandler(createStore());
+  return createApiHandler();
 }
 
 async function call(
@@ -57,6 +56,42 @@ test("GET /api/todos requires tenant", async () => {
   const h = handler();
   const res = await call(h, "GET", "/api/todos");
   expect(res.status).toBe(400);
+});
+
+test("GET /api/todos returns empty list for known tenant", async () => {
+  const h = handler();
+  const tenant = (await (
+    await call(h, "POST", "/api/tenants", { name: "Acme" })
+  ).json()) as { id: string };
+  const res = await call(h, "GET", `/api/todos?tenantId=${tenant.id}`);
+  expect(res.status).toBe(200);
+  expect(await res.json()).toEqual([]);
+});
+
+test("PATCH /api/todos returns 404 for unknown todo", async () => {
+  const h = handler();
+  const tenant = (await (
+    await call(h, "POST", "/api/tenants", { name: "Acme" })
+  ).json()) as { id: string };
+  const res = await call(
+    h,
+    "PATCH",
+    `/api/todos/unknown?tenantId=${tenant.id}`,
+  );
+  expect(res.status).toBe(404);
+});
+
+test("DELETE /api/todos returns 404 for unknown todo", async () => {
+  const h = handler();
+  const tenant = (await (
+    await call(h, "POST", "/api/tenants", { name: "Acme" })
+  ).json()) as { id: string };
+  const res = await call(
+    h,
+    "DELETE",
+    `/api/todos/unknown?tenantId=${tenant.id}`,
+  );
+  expect(res.status).toBe(404);
 });
 
 test("full todo flow is tenant scoped", async () => {

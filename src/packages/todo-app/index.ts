@@ -1,9 +1,7 @@
 import indexHtml from "./index.html";
-import { createStore } from "./store.ts";
-import { createApiHandler } from "./routes.ts";
+import { createApiHandler } from "./server.ts";
 
-const store = createStore();
-const apiHandler = createApiHandler(store);
+const apiHandler = createApiHandler();
 
 function startServer(port: number): ReturnType<typeof Bun.serve> {
   return Bun.serve({
@@ -15,4 +13,4 @@ function startServer(port: number): ReturnType<typeof Bun.serve> {
   });
 }
 
-export { startServer, createStore };
+export { startServer };

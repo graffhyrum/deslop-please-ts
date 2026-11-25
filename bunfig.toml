@@ -2,7 +2,7 @@
 coverageSkipTestFiles = true
 coveragePathIgnorePatterns = [
   "**/*.test.ts",
-  "src/client.ts",
+  "src/packages/todo-app/client.ts",
   "**/*.spec.ts",
   "scripts/**",
   "node_modules/**",
