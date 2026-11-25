@@ -6,12 +6,14 @@ import {
   runLints,
   type Check,
 } from "./lint.ts";
-import type {
-  ImportEdge,
-  Item,
-  Model,
-  ModuleInfo,
-  Reference,
+import {
+  toItemId,
+  toModuleId,
+  type ImportEdge,
+  type Item,
+  type Model,
+  type ModuleInfo,
+  type Reference,
 } from "./model.ts";
 
 const ROOT = "/proj";
@@ -28,15 +30,15 @@ function makeModel(overrides: Partial<Model> = {}): Model {
 }
 
 function moduleAt(id: number, name: string, lines = 1): ModuleInfo {
-  return { id, path: `${ROOT}/${name}`, lines };
+  return { id: toModuleId(id), path: `${ROOT}/${name}`, lines };
 }
 
 function functionItem(id: number, owner: number, exported = false): Item {
   return {
-    id,
+    id: toItemId(id),
     kind: "function",
     name: `fn${id}`,
-    owner,
+    owner: toModuleId(owner),
     parent: null,
     file: `${ROOT}/lib.ts`,
     line: id + 1,
@@ -48,15 +50,20 @@ function ref(from: number, holder: number | null, item: number): Reference {
   return {
     file: `${ROOT}/app.ts`,
     line: 1,
-    from,
-    holder,
-    item,
+    from: toModuleId(from),
+    holder: holder === null ? null : toItemId(holder),
+    item: toItemId(item),
     copies: true,
   };
 }
 
 function edge(from: number, to: number, typeOnly = false): ImportEdge {
-  return { from, to, typeOnly, dynamic: false };
+  return {
+    from: toModuleId(from),
+    to: toModuleId(to),
+    typeOnly,
+    dynamic: false,
+  };
 }
 
 function codes(model: Model): Check[] {
@@ -128,10 +135,10 @@ test("tangle leaves a small group clean", () => {
 
 test("field-leak flags a field referenced from another module", () => {
   const field: Item = {
-    id: 0,
+    id: toItemId(0),
     kind: "field",
     name: "value",
-    owner: 0,
+    owner: toModuleId(0),
     parent: null,
     file: `${ROOT}/box.ts`,
     line: 2,
@@ -152,10 +159,10 @@ test("field-leak flags a field referenced from another module", () => {
 
 test("field-leak ignores a field used only inside its own module", () => {
   const field: Item = {
-    id: 0,
+    id: toItemId(0),
     kind: "field",
     name: "value",
-    owner: 0,
+    owner: toModuleId(0),
     parent: null,
     file: `${ROOT}/box.ts`,
     line: 2,
@@ -223,7 +230,13 @@ test("long-file leaves short files clean", () => {
 
 test("excluded vendor paths are not linted", () => {
   const model = makeModel({
-    modules: [{ id: 0, path: `${ROOT}/node_modules/pkg/big.ts`, lines: 500 }],
+    modules: [
+      {
+        id: toModuleId(0),
+        path: `${ROOT}/node_modules/pkg/big.ts`,
+        lines: 500,
+      },
+    ],
   });
   expect(runLints(model, DEFAULT_OPTIONS)).toEqual([]);
 });
@@ -239,10 +252,10 @@ test("options override the held-in-mind and line thresholds", () => {
 
 test("diagnostics on the same file are sorted by line", () => {
   const field = (id: number, name: string, line: number): Item => ({
-    id,
+    id: toItemId(id),
     kind: "field",
     name,
-    owner: 0,
+    owner: toModuleId(0),
     parent: null,
     file: `${ROOT}/box.ts`,
     line,
@@ -263,7 +276,10 @@ test("diagnostics on the same file and line are sorted by code", () => {
     moduleAt(i + 1, `bucket/f${i}.ts`),
   );
   const model = makeModel({
-    modules: [{ id: 0, path: `${ROOT}/bucket`, lines: 301 }, ...children],
+    modules: [
+      { id: toModuleId(0), path: `${ROOT}/bucket`, lines: 301 },
+      ...children,
+    ],
   });
   const found = runLints(model, DEFAULT_OPTIONS);
   expect(found.map((d) => d.code)).toEqual(["long-file", "wide-directory"]);
