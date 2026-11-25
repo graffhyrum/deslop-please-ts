@@ -45,6 +45,7 @@
     "@changesets/cli": "^3.0.3",
     "@graff/rule-validator": "https://github.com/graffhyrum/ts-quality/releases/download/rule-validator-v1.2.1/graff-rule-validator-1.2.1.tgz",
     "@graffhyrum/crap4ts": "https://github.com/graffhyrum/ts-quality/releases/download/crap4ts-v2.1.4/graffhyrum-crap4ts-2.1.4.tgz",
+    "@interfere/landmines": "^0.3.1",
     "@stepdown/analyzer": "https://github.com/graffhyrum/ts-quality/releases/download/stepdown-rule-v0.4.7/stepdown-analyzer-0.4.7.tgz",
     "@total-typescript/ts-reset": "^0.6.1",
     "@types/bun": "^1.4.5",
