@@ -6,6 +6,9 @@ const TEST_SUFFIXES = [".test.ts", ".spec.ts"] as const;
 
 export function isTestFile(path: string): boolean {
   const normalized = path.replace(/\\/g, "/");
-  const base = normalized.split("/").pop() ?? normalized;
+  const segments = normalized.split("/");
+  // Files under a __tests__ directory are test files regardless of name.
+  if (segments.includes("__tests__")) return true;
+  const base = segments.pop() ?? normalized;
   return TEST_SUFFIXES.some((suffix) => base.endsWith(suffix));
 }
