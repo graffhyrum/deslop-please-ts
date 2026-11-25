@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { beforeAll, expect, test } from "bun:test";
 import { startServer } from "./index.ts";
 
 test("startServer responds on /api/tenants", async () => {
@@ -9,7 +9,9 @@ test("startServer responds on /api/tenants", async () => {
   void server.stop(true);
 });
 
-test("the entry point starts the server", async () => {
+let entryPointOutput = "";
+
+beforeAll(async () => {
   const proc = Bun.spawn([process.execPath, "bin/serve.ts"], {
     stdout: "pipe",
     stderr: "pipe",
@@ -17,8 +19,11 @@ test("the entry point starts the server", async () => {
   });
   const reader = proc.stdout.getReader();
   const { value } = await reader.read();
-  const text = new TextDecoder().decode(value);
-  expect(text).toContain("listening");
+  entryPointOutput = new TextDecoder().decode(value);
   proc.kill();
   await proc.exited;
+});
+
+test("the entry point starts the server", () => {
+  expect(entryPointOutput).toContain("listening");
 });
